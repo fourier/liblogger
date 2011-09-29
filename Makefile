@@ -20,39 +20,48 @@
 
 CC = gcc
 
-CFLAGS = -ggdb -pg -ansi -pedantic -Wall -Wextra -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations 
+CFLAGS = -ggdb -g -ansi -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations 
 INCLUDES = -I .
-LINKFLAGS = -L. -llogger 
+LINKFLAGS = -L.
+LINKFLAGS_DAEMON = #-lsocket -lnsl
 
-OUTPUT_SRC = main.c
-SOURCES := $(wildcard *.c)
+SRC_TEST = main.c
+SRC_DAEMON = loggerd.c
+SRC_LIB = logger.c
+
 HEADERS := $(wildcard *.h)
-OBJECTS := $(patsubst %.c,%.o,$(SOURCES))
-OBJECTS_LIB := $(filter-out $(patsubst %.c,%.o,$(OUTPUT_SRC)),$(OBJECTS))
-OUTPUT = loggertest
+OBJECTS_LIB := $(patsubst %.c,%.o,$(SRC_LIB))
+OBJECTS_DAEMON := $(patsubst %.c,%.o,$(SRC_DAEMON))
+OBJECTS_TEST := $(patsubst %.c,%.o,$(SRC_TEST))
+OBJECTS := $(patsubst %.c,%.o,$(SRC_TEST) $(SRC_DAEMON) $(SRC_LIB))
+
+OUTPUT_TEST = loggertest
+OUTPUT_DAEMON = loggerd
 OUTPUT_LIB = liblogger.a
+
+all: $(OBJECTS) $(OUTPUT_LIB) $(OUTPUT_DAEMON) $(OUTPUT_TEST)
 
 %.o : %.c %.h
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) $< -o $@
 
-$(OUTPUT): $(OUTPUT_LIB) 
-	$(CC) $(patsubst %.c,%.o,$(OUTPUT_SRC)) -o $(OUTPUT) $(LINKFLAGS)
+$(OUTPUT_TEST): $(HEADERS) $(OUTPUT_LIB) 
+	$(CC) $(OBJECTS_TEST) -o $(OUTPUT_TEST) $(LINKFLAGS) -llogger
 
-$(OUTPUT_LIB): $(OBJECTS)
+$(OUTPUT_LIB): $(HEADERS) $(OBJECTS_LIB)
 	$(RM) -f $(OUTPUT_LIB)
 	$(AR) cr $(OUTPUT_LIB) $(OBJECTS_LIB)
 	ranlib $(OUTPUT_LIB)
 
-
-
-all: $(OUTPUT)
+$(OUTPUT_DAEMON): $(HEADERS) $(OBJECTS_DAEMON)
+	$(CC) $(LINKFLAGS_DAEMON) $(OBJECTS_DAEMON) -o $(OUTPUT_DAEMON)
 
 lint:
 	splint *.c
 
 .PHONY : clean
 clean :
-	rm $(OBJECTS) $(OUTPUT) $(OUTPUT_LIB)
+	$(RM) $(OBJECTS_LIB) $(OBJECTS_DAEMON) $(OBJECTS_TEST)
+	$(RM)	$(OUTPUT_LIB) $(OUTPUT_TEST) $(OUTPUT_DAEMON)
 
 check-syntax: 
 	gcc -o nul -S ${CHK_SOURCES} 
