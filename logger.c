@@ -21,11 +21,53 @@
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "logger.h"
 
 int logger_log_level = LOG_LEVEL_ALL;
 int logger_output_socket = 0;
+
+#define LOGGER_MAX_HEADER_SIZE 512
+char logger_log_header[LOGGER_MAX_HEADER_SIZE+1];
+char logger_log_message[LOGGER_MAX_ENTRY_SIZE+1];
+
+static void logger_write_private(const char* name,
+                                 int entry_type,
+                                 const char* format,
+                                 va_list args)
+{
+  const char* header_format;
+  switch(entry_type)
+  {
+  case LOG_ENTRY_WARNING:
+    header_format = "[%s][%s][%p] /warning: %s\n";
+    break;
+  case LOG_ENTRY_ERROR:
+    header_format = "[%s][%s][%p] /error: %s\n";
+    break;
+  case LOG_ENTRY_NORMAL:
+  default:
+    header_format = "[%s][%s][%p]: %s\n";
+    break;
+  case LOG_ENTRY_INFO:
+		header_format = "[%s][%s][%p]: /info: %s\n";
+		break;
+  }
+  snprintf(logger_log_header,
+           LOGGER_MAX_HEADER_SIZE,
+           header_format,
+           name,
+           "29 Sep 2011",
+           "0xDEADEAD",
+           format);
+  vsnprintf(logger_log_message,
+            LOGGER_MAX_ENTRY_SIZE,
+            logger_log_header,
+            args);
+  printf("%s",logger_log_message);
+}
+
 
 void logger_set_log_level(int level)
 {
@@ -35,6 +77,7 @@ void logger_set_log_level(int level)
 
 void logger_init()
 {
+  logger_output_socket = 0;
 }
 
 void logger_fini()
@@ -44,13 +87,16 @@ void logger_fini()
   logger_output_socket = 0;
 }
 
+
+
 void logger_write(const char* name,int entry_type, const char* format, ...)
 {
+  if (entry_type <= logger_log_level)
+  {
+    va_list vl;
+    va_start(vl, format);
+    logger_write_private(name, entry_type, format, vl);
+    va_end(vl);
+  }
 }
 
-static void logger_write_private(const char* name,
-                                 int entry_type,
-                                 const char* format,
-                                 va_list args)
-{
-}
