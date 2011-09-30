@@ -18,10 +18,38 @@
   along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+
 #include "logger.h"
 
 int main(/* int argc, char *argv[] */)
 {
+  /* logger_init(); */
+  logger_init_with_logname("test.log");
+  printf("Log level ALL\n");
+  logger_set_log_level(LOG_LEVEL_ALL);
+
+  logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
+  logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
+  logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
+  logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
+
+  printf("Log level NORMAL\n");
+  logger_set_log_level(LOG_LEVEL_NORMAL);
+
+  logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
+  logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
+  logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
+  logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
+
+  printf("Log level ERRORS\n");
+  logger_set_log_level(LOG_LEVEL_ERRORS);
+  logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
+  logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
+  logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
+  logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
   
+  logger_fini();
+  getc(stdin);
   return 0;
 }

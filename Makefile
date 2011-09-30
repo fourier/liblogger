@@ -20,14 +20,15 @@
 
 CC = gcc
 
-CFLAGS = -ggdb -g -ansi -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations 
+CFLAGS = -ggdb -g -ansi -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations -DLOGGER_REENTRANT
+#-DLOGGER_OMIT_STDOUT
 INCLUDES = -I .
 LINKFLAGS = -L.
 LINKFLAGS_DAEMON = #-lsocket -lnsl
 
 SRC_TEST = main.c
 SRC_DAEMON = loggerd.c
-SRC_LIB = logger.c
+SRC_LIB = logger.c rtclock.c
 
 HEADERS := $(wildcard *.h)
 OBJECTS_LIB := $(patsubst %.c,%.o,$(SRC_LIB))

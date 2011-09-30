@@ -27,23 +27,35 @@
 
 typedef enum 
 {
-  LOG_ENTRY_ERROR = 0,
-  LOG_ENTRY_WARNING = 1, 
-  LOG_ENTRY_NORMAL = 2,
+  LOG_ENTRY_NORMAL = 0,
+  LOG_ENTRY_ERROR = 1,
+  LOG_ENTRY_WARNING = 2, 
   LOG_ENTRY_INFO = 3
 } log_entry_type;
 
 typedef enum
 {
-  LOG_LEVEL_ERRORS = 0,
-  LOG_LEVEL_WARNINGS = 1,
+  LOG_LEVEL_ERRORS = 1,
   LOG_LEVEL_NORMAL = 2,
   LOG_LEVEL_ALL = 3
 } log_level_type;
 
-void logger_set_log_level(int level);
+typedef struct
+{
+  log_level_type log_level;
+  const char* log_file_path;
+  unsigned int log_rotate_count;
+} logger_parameters;
+
+
 void logger_init();
+void logger_init_with_loglevel(log_level_type log_level);
+void logger_init_with_logname(const char* log_name);
+void logger_init_with_params(const logger_parameters* params);
 void logger_fini();
+
+void logger_set_log_level(log_level_type log_level);
+
 void logger_write(const char* name,int entry_type, const char* format, ...);
 
 #endif /* _LOGGER_H_ */

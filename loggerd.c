@@ -34,6 +34,54 @@
 
 #define LOGGER_MAX_QUEUE_OF_PENDING_CONNECTIONS 50
 
+static int process_connected_socked(int socket, fd_set* master)
+{
+  int do_exit = 0;
+  /* buffer for client data */
+  char* recv_buffer;
+  /* received bytes */
+  int nbytes;
+
+  /* header of the message */
+  int size; 
+
+  recv_buffer = calloc(LOGGER_MAX_ENTRY_SIZE+1,1);
+  
+  /* handle data from a client */
+  /* if((nbytes = recv(socket, recv_buffer, LOGGER_MAX_ENTRY_SIZE, 0)) <= 0) */
+  if((nbytes = recv(socket, &size, sizeof(int), 0)) <= 0)    
+  {
+    /* got error or connection closed by client */
+    if (nbytes == 0) /* connection closed */
+    {
+      printf("socket %d hung up\n", socket);
+    }
+    else
+      printf("recv() error\n");
+ 
+    /* close connection */
+    close(socket);
+    /* and remove from master set */
+    FD_CLR(socket, master);
+    /* probably exit? */
+    /* do_exit = 1; */
+  }
+  else
+  {
+    /* we got some data from a client: buf, nbytes */
+    printf("got %d bytes\n",nbytes);
+    assert(nbytes == sizeof(int));
+    size = ntohl(size);
+    printf("received number = %d\n",size);
+    nbytes = recv(socket, recv_buffer, size, 0);
+    assert(nbytes == size);
+    recv_buffer[size] = '\0';
+    printf("%s",recv_buffer);
+  }
+  free(recv_buffer);
+  return do_exit;
+}
+
 static void run()
 {
   /* master file descriptor list */
@@ -50,19 +98,14 @@ static void run()
   int listener;
   /* newly accept()ed socket descriptor */
   int newfd = 0;
-  /* buffer for client data */
-  char* recv_buffer;
-  int nbytes;
 
   socklen_t addrlen;
   int i;
-  int doExit = 0;
+  int do_exit = 0;
   int rc;
   /* for setsockopt() SO_REUSEADDR, below */
   int yes = 1;
 
-  recv_buffer = calloc(LOGGER_MAX_ENTRY_SIZE+1,1);
-    
   /* clear the master and temp sets */
   FD_ZERO(&master);
   FD_ZERO(&read_fds);
@@ -98,7 +141,7 @@ static void run()
 
 
   /* Run loop */
-  while (!doExit)
+  while (!do_exit)
   {
     /* copy it */
     read_fds = master;
@@ -124,46 +167,24 @@ static void run()
         }
         else
         {
-          /* handle data from a client */
-          if((nbytes = recv(i, recv_buffer, LOGGER_MAX_ENTRY_SIZE, 0)) <= 0)
-          {
-            /* got error or connection closed by client */
-            if (nbytes == 0) /* connection closed */
-            {
-              printf("socket %d hung up\n", i);
-            }
-            else
-              printf("recv() error\n");
- 
-            /* close connection */
-            close(i);
-            /* and remove from master set */
-            FD_CLR(i, &master);
-          }
-          else
-          {
-            printf("got %d bytes\n",nbytes);
-            /* we got some data from a client: buf, nbytes */
-            recv_buffer[nbytes] = '\0';
-            printf("%s",recv_buffer);
-            /* handle quit event */
-            if ( !strcmp(recv_buffer,"quit\r\n"))
-            {
-              doExit = 1;
-              break;
-            }
-          }
+          do_exit = process_connected_socked(i,&master);
         }
       }
     }
   }
   close(listener);
-  free(recv_buffer);
 }
 
 
-int main(/* int argc, char *argv[] */)
+int main(int argc, char *argv[])
 {
+  int i = 1;
+  if (argc > 1)
+  {
+    printf("Args: %d\n",argc);
+    for (; i < argc; ++ i)
+      printf("%s\n",argv[i]);
+  }
   run();
   return 0;
 }
