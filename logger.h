@@ -40,9 +40,17 @@ typedef enum
   LOG_LEVEL_ALL = 3
 } log_level_type;
 
+typedef enum
+{
+  LOG_FORMAT_SIMPLE = 0,
+  LOG_FORMAT_NORMAL = 1
+} log_format_type;
+  
+
 typedef struct
 {
   log_level_type log_level;
+  log_format_type log_format;
   const char* log_file_path;
   unsigned int log_rotate_count;
 } logger_parameters;

@@ -21,15 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h> 
-
-
 
 #ifdef LOGGER_REENTRANT
 #include <pthread.h>
@@ -42,17 +35,12 @@
 #define LOGGER_MAX_HEADER_SIZE 512
 #define LOGGER_TIME_BUFFER_SIZE 64
 
-#define LOGGER_DAEMON_NAME "loggerd"
-
 /* Compile-time configuration options */
-#ifdef LOGGER_FORMAT_SIMLPE
 
-#define HEADER_FORMAT_WARNING "warning: %s\n"
-#define HEADER_FORMAT_ERROR "error: %s\n"
-#define HEADER_FORMAT_NORMAL "%s\n"
-#define HEADER_FORMAT_INFO "info: %s\n"
-
-#else  /* !LOGGER_FORMAT_SIMLPE */
+#define HEADER_FORMAT_SIMPLE_WARNING "warning: %s\n"
+#define HEADER_FORMAT_SIMPLE_ERROR "error: %s\n"
+#define HEADER_FORMAT_SIMPLE_NORMAL "%s\n"
+#define HEADER_FORMAT_SIMPLE_INFO "info: %s\n"
 
 #ifdef LOGGER_REENTRANT
 
@@ -70,14 +58,12 @@
 
 #endif  /* LOGGER_REENTRANT */
 
-#endif  /* LOGGER_FORMAT_SIMLPE */
 /*
  * Globals
  */
 
 /* Configuration values */
 logger_parameters* logger_global_params = 0;
-
 
 
 /* Log buffers */
@@ -88,8 +74,6 @@ char logger_log_entry[LOGGER_MAX_ENTRY_SIZE+1];
 #ifdef LOGGER_REENTRANT
 pthread_mutex_t logger_lock;
 #endif
-
-int logger_output_socket = 0;
 
 static const char* logger_strdup(const char* str)
 {
@@ -108,36 +92,14 @@ static const char* logger_strdup(const char* str)
 
 static void logger_process_log_entry(int size)
 {
-  struct timespec ts1;
-  struct timespec ts2;
-  int network_size = htonl(size);
 #ifndef LOGGER_OMIT_STDOUT
-  portable_gettime(&ts1);
+  /* portable_gettime(&ts1); */
   printf("%s",logger_log_entry);
-  portable_gettime(&ts2);
-  printf("microseconds output: %f\n",(ts2.tv_nsec-ts1.tv_nsec)/1000.);
+  fflush(stdout);
+  /* portable_gettime(&ts2); */
+  /* printf("microseconds output: %f\n",(ts2.tv_nsec-ts1.tv_nsec)/1000.); */
 #endif
-  if ( logger_output_socket )
-  {
-    portable_gettime(&ts1);
-    send(logger_output_socket,
-         (void*)&network_size,
-         sizeof(int),
-         0);
-    send(logger_output_socket,
-         logger_log_entry,
-         size,
-         0);
-    portable_gettime(&ts2);
-    printf("microseconds send: %f\n",(ts2.tv_nsec-ts1.tv_nsec)/1000.);
-  }
-  portable_gettime(&ts1);
-  char* buf1 = malloc(size+1);
-  memcpy(buf1,logger_log_entry,size);
-  buf1[size] = '\0';
-  portable_gettime(&ts2);
-  printf("microseconds copy: %f\n",(ts2.tv_nsec-ts1.tv_nsec)/1000.);
-  
+  /* TODO: implement output to the file and logging backend */
 }
 
 
@@ -161,18 +123,50 @@ static void logger_write_private(const char* name,
   switch(entry_type)
   {
   case LOG_ENTRY_WARNING:
-    header_format = HEADER_FORMAT_WARNING; break;
+    switch(logger_global_params->log_format)
+    {
+    case LOG_FORMAT_SIMPLE:
+      header_format = HEADER_FORMAT_SIMPLE_WARNING; break;
+    case LOG_FORMAT_NORMAL:
+    default:
+      header_format = HEADER_FORMAT_WARNING; break;
+    }
+    break;
   case LOG_ENTRY_ERROR:
-    header_format = HEADER_FORMAT_ERROR; break;
+    switch(logger_global_params->log_format)
+    {
+    case LOG_FORMAT_SIMPLE:
+      header_format = HEADER_FORMAT_SIMPLE_ERROR; break;
+    case LOG_FORMAT_NORMAL:
+    default:
+      header_format = HEADER_FORMAT_ERROR; break;
+    }
+    break;
   case LOG_ENTRY_INFO:
-		header_format = HEADER_FORMAT_INFO; break;
+    switch(logger_global_params->log_format)
+    {
+    case LOG_FORMAT_SIMPLE:
+      header_format = HEADER_FORMAT_SIMPLE_INFO; break;
+    case LOG_FORMAT_NORMAL:
+    default:
+      header_format = HEADER_FORMAT_INFO; break;
+    }
+    break;
   case LOG_ENTRY_NORMAL:
   default:
-    header_format = HEADER_FORMAT_NORMAL; break;
+    switch(logger_global_params->log_format)
+    {
+    case LOG_FORMAT_SIMPLE:
+      header_format = HEADER_FORMAT_SIMPLE_NORMAL; break;
+    case LOG_FORMAT_NORMAL:
+    default:
+      header_format = HEADER_FORMAT_NORMAL; break;
+    }
+    break;
   }
   
 
-#ifndef LOGGER_FORMAT_SIMLPE
+  if (logger_global_params->log_format != LOG_FORMAT_SIMPLE)
 #ifdef LOGGER_REENTRANT
   snprintf(logger_log_header,
            LOGGER_MAX_HEADER_SIZE,
@@ -181,19 +175,19 @@ static void logger_write_private(const char* name,
            time_buf,
            (void*)pthread_self(),
            format);
-#endif
+#else
   snprintf(logger_log_header,
            LOGGER_MAX_HEADER_SIZE,
            header_format,
            name,
            time_buf,
            format);
-#else
-  snprintf(logger_log_header,
-           LOGGER_MAX_HEADER_SIZE,
-           header_format,
-           format);
 #endif
+  else
+    snprintf(logger_log_header,
+      LOGGER_MAX_HEADER_SIZE,
+      header_format,
+      format);
   
 #ifdef LOGGER_REENTRANT
   pthread_mutex_lock(&logger_lock);
@@ -214,56 +208,10 @@ static void logger_set_initial_time()
 {
 }
 
-static void logger_create_socket()
-{
-  struct sockaddr_in sock_addr;
-  logger_output_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  assert(logger_output_socket != -1);
-  memset(&sock_addr, 0, sizeof(sock_addr));
- 
-  sock_addr.sin_family = AF_INET;
-  sock_addr.sin_port = htons(LOGGER_SERVER_PORT);
-  sock_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  if (-1 == connect(logger_output_socket,
-                    (struct sockaddr *)&sock_addr,
-                    sizeof(sock_addr)))
-  {
-    close(logger_output_socket);
-    assert(0);
-  }
-}
 
 static void logger_init_private()
 {
-  /* pid of the forked process */
-  int pid;
-  /* rotations */
-  char rotations[25];
-  assert(logger_global_params);
-  snprintf(rotations, 25, "%d", logger_global_params->log_rotate_count);
   logger_set_initial_time();
-  /* fork only if the log file specified */
-  if ( logger_global_params->log_file_path)
-  {
-    pid = fork();
-    switch (pid)
-    {
-    case -1:
-      assert(0);
-      break;
-    case 0:                       /* child */
-       execl(LOGGER_DAEMON_NAME,
-             LOGGER_DAEMON_NAME,
-             logger_global_params->log_file_path,
-             rotations,
-             0);
-      break;
-    default:
-      sleep(1);
-      logger_create_socket();
-      break;
-    }
-  }
 }
 
 
@@ -303,8 +251,7 @@ void logger_init_with_params(const logger_parameters* params)
   if ( !logger_global_params )  /* avoid double initialization */
   {
     logger_global_params = calloc(sizeof(logger_parameters),1);
-    logger_output_socket = 0;
-    
+    logger_global_params->log_format = params->log_format;
     logger_global_params->log_level = params->log_level;
     logger_global_params->log_rotate_count = params->log_rotate_count;
     logger_global_params->log_file_path = params->log_file_path ?
@@ -316,12 +263,6 @@ void logger_init_with_params(const logger_parameters* params)
 
 void logger_fini()
 {
-  if (logger_output_socket)
-  {
-    shutdown(logger_output_socket,SHUT_RDWR); 
-    close(logger_output_socket);
-  }
-  logger_output_socket = 0;
   if (logger_global_params)
   {
     if ( logger_global_params->log_file_path )
@@ -330,16 +271,15 @@ void logger_fini()
   }
 }
 
-
-
 void logger_write(const char* name,int entry_type, const char* format, ...)
 {
   struct timeval tv;
-#ifndef LOGGER_FORMAT_SIMLPE
-  gettimeofday( &tv,0);
-#endif
   if (!logger_global_params)
     logger_init();
+
+  if (logger_global_params->log_format != LOG_FORMAT_SIMPLE)
+    gettimeofday( &tv,0);
+
   if (entry_type == LOG_ENTRY_NORMAL ||
       entry_type <= (int)logger_global_params->log_level)
   {

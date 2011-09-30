@@ -50,6 +50,6 @@ int main(/* int argc, char *argv[] */)
   logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
   
   logger_fini();
-  getc(stdin);
+
   return 0;
 }

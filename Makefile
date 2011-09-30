@@ -24,44 +24,37 @@ CFLAGS = -ggdb -g -ansi -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -
 #-DLOGGER_OMIT_STDOUT
 INCLUDES = -I .
 LINKFLAGS = -L.
-LINKFLAGS_DAEMON = #-lsocket -lnsl
 
 SRC_TEST = main.c
-SRC_DAEMON = loggerd.c
 SRC_LIB = logger.c rtclock.c
 
 HEADERS := $(wildcard *.h)
 OBJECTS_LIB := $(patsubst %.c,%.o,$(SRC_LIB))
-OBJECTS_DAEMON := $(patsubst %.c,%.o,$(SRC_DAEMON))
 OBJECTS_TEST := $(patsubst %.c,%.o,$(SRC_TEST))
-OBJECTS := $(patsubst %.c,%.o,$(SRC_TEST) $(SRC_DAEMON) $(SRC_LIB))
+OBJECTS := $(patsubst %.c,%.o,$(SRC_TEST) $(SRC_LIB))
 
 OUTPUT_TEST = loggertest
-OUTPUT_DAEMON = loggerd
 OUTPUT_LIB = liblogger.a
 
-all: $(OBJECTS) $(OUTPUT_LIB) $(OUTPUT_DAEMON) $(OUTPUT_TEST)
+all: $(OBJECTS) $(OUTPUT_LIB) $(OUTPUT_TEST)
 
 %.o : %.c %.h
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) $< -o $@
 
-$(OUTPUT_TEST): $(HEADERS) $(OUTPUT_LIB) 
+$(OUTPUT_TEST): $(HEADERS) $(OBJECTS) $(OUTPUT_LIB) 
 	$(CC) $(OBJECTS_TEST) -o $(OUTPUT_TEST) $(LINKFLAGS) -llogger
 
-$(OUTPUT_LIB): $(HEADERS) $(OBJECTS_LIB)
+$(OUTPUT_LIB): $(HEADERS) $(OBJECTS) $ $(OBJECTS_LIB)
 	$(RM) -f $(OUTPUT_LIB)
 	$(AR) cr $(OUTPUT_LIB) $(OBJECTS_LIB)
 	ranlib $(OUTPUT_LIB)
-
-$(OUTPUT_DAEMON): $(HEADERS) $(OBJECTS_DAEMON)
-	$(CC) $(LINKFLAGS_DAEMON) $(OBJECTS_DAEMON) -o $(OUTPUT_DAEMON)
 
 lint:
 	splint *.c
 
 .PHONY : clean
 clean :
-	$(RM) $(OBJECTS_LIB) $(OBJECTS_DAEMON) $(OBJECTS_TEST)
+	$(RM) $(OBJECTS_LIB)  $(OBJECTS_TEST)
 	$(RM)	$(OUTPUT_LIB) $(OUTPUT_TEST) $(OUTPUT_DAEMON)
 
 check-syntax: 
