@@ -20,7 +20,8 @@
 
 CC = gcc
 
-CFLAGS = -ggdb -g -ansi -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations -DLOGGER_REENTRANT
+CFLAGS = -ggdb -g -ansi -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations
+#-DLOGGER_REENTRANT
 #-DLOGGER_OMIT_STDOUT
 INCLUDES = -I .
 LINKFLAGS = -L.

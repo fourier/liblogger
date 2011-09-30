@@ -58,6 +58,11 @@
 
 #endif  /* LOGGER_REENTRANT */
 
+#ifndef LOGGER_REENTRANT
+struct timespec logger_event_start_ev;
+#endif 
+
+
 /*
  * Globals
  */
@@ -229,6 +234,7 @@ void logger_init()
   logger_init_with_loglevel(LOG_LEVEL_ALL);
 }
 
+
 void logger_init_with_loglevel(log_level_type log_level )
 {
   logger_parameters params;
@@ -236,6 +242,7 @@ void logger_init_with_loglevel(log_level_type log_level )
   params.log_level = log_level;
   logger_init_with_params(&params);
 }
+
 
 void logger_init_with_logname(const char* log_name)
 {
@@ -245,6 +252,7 @@ void logger_init_with_logname(const char* log_name)
   params.log_file_path = log_name;
   logger_init_with_params(&params);
 }
+
 
 void logger_init_with_params(const logger_parameters* params)
 {
@@ -261,6 +269,7 @@ void logger_init_with_params(const logger_parameters* params)
   }
 }
 
+
 void logger_fini()
 {
   if (logger_global_params)
@@ -270,6 +279,7 @@ void logger_fini()
     free(logger_global_params);
   }
 }
+
 
 void logger_write(const char* name,int entry_type, const char* format, ...)
 {
@@ -289,4 +299,30 @@ void logger_write(const char* name,int entry_type, const char* format, ...)
     va_end(vl);
   }
 }
+
+#ifndef LOGGER_REENTRANT
+
+void logger_event_start(const char* name, int entry_type, const char* ev_name)
+{
+  logger_write(name,entry_type,"Started: %s", ev_name);
+  portable_gettime(&logger_event_start_ev);
+}
+
+
+void logger_event_end(const char* name, int entry_type, const char* ev_name)
+{
+  struct timespec ts;
+  long diff_sec, diff_micsec;
+  portable_gettime(&ts);
+  diff_sec = ts.tv_sec - logger_event_start_ev.tv_sec;
+  diff_micsec = (ts.tv_nsec - logger_event_start_ev.tv_nsec)/1000;
+    
+  if ( diff_sec)
+    logger_write(name,entry_type,"Ended: %s, seconds: %ld, microseconds: %dl",
+    ev_name, diff_sec, diff_micsec);
+  else
+    logger_write(name,entry_type,"Ended: %s, microseconds: %ld",
+    ev_name, diff_micsec);
+}
+#endif
 

@@ -66,4 +66,10 @@ void logger_set_log_level(log_level_type log_level);
 
 void logger_write(const char* name,int entry_type, const char* format, ...);
 
+#ifndef LOGGER_REENTRANT
+void logger_event_start(const char* name, int entry_type, const char* ev_name);
+void logger_event_end(const char* name, int entry_type, const char* ev_name);
+#endif
+
+
 #endif /* _LOGGER_H_ */

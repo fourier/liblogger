@@ -44,11 +44,12 @@ int main(/* int argc, char *argv[] */)
 
   printf("Log level ERRORS\n");
   logger_set_log_level(LOG_LEVEL_ERRORS);
+  logger_event_start("main",LOG_ENTRY_NORMAL,"logging");
   logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
   logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
-  
+  logger_event_end("main",LOG_ENTRY_NORMAL,"logging");
   logger_fini();
 
   return 0;
