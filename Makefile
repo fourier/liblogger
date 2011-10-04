@@ -21,8 +21,9 @@
 CC = gcc
 
 CFLAGS = -ggdb -g -std=c99 -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations
+#-fstack-protector-all -fstack-check
 #-DLOGGER_REENTRANT
-#-DLOGGER_OMIT_STDOUT
+
 INCLUDES = -I .
 LINKFLAGS = -L.
 #-lrt

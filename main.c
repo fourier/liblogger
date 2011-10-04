@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 {
   logger_parameters params;
   params.log_level = LOG_LEVEL_NORMAL;
-  params.log_format = LOG_FORMAT_SEXP;
+  params.log_format = LOG_FORMAT_XML;
   if ( argc > 1)
   {
     params.log_file_path = argv[1];
@@ -40,7 +40,6 @@ int main(int argc, char *argv[])
   logger_set_log_level(LOG_LEVEL_ALL);
 
   LOGERROR("some error!");
-  
   logger_write(__FILE__,LOG_ENTRY_NORMAL,"the message: %s","normal");
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");

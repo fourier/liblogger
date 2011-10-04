@@ -90,9 +90,6 @@ static void logger_process_log_entry(const log_entry* const entry)
 }
 
 
-
-
-
 static void logger_set_initial_time()
 {
 }
@@ -214,6 +211,7 @@ void logger_init_with_loglevel(log_level_type log_level )
   params.log_level = log_level;
   params.log_format = LOG_FORMAT_SIMPLE;
   params.log_rotate_count = 0;
+  params.log_file_path = 0;
   logger_init_with_params(&params);
 }
 
