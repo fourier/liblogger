@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -30,37 +29,24 @@
 
 #include "logger.h"
 #include "rtclock.h"
-
-
-#define LOGGER_MAX_HEADER_SIZE 512
-#define LOGGER_TIME_BUFFER_SIZE 64
+#include "simplebackend.h"
+#include "txtbackend.h"
+#include "xmlbackend.h"
+#include "sexpbackend.h"
 
 /* Compile-time configuration options */
-
-#define HEADER_FORMAT_SIMPLE_WARNING "warning: %s\n"
-#define HEADER_FORMAT_SIMPLE_ERROR "error: %s\n"
-#define HEADER_FORMAT_SIMPLE_NORMAL "%s\n"
-#define HEADER_FORMAT_SIMPLE_INFO "info: %s\n"
-
-#ifdef LOGGER_REENTRANT
-
-#define HEADER_FORMAT_WARNING "[%s][%s][%p] /warning: %s\n"
-#define HEADER_FORMAT_ERROR "[%s][%s][%p] /error: %s\n"
-#define HEADER_FORMAT_NORMAL "[%s][%s][%p]: %s\n"
-#define HEADER_FORMAT_INFO "[%s][%s][%p]: /info: %s\n"
-
-#else  /* !LOGGER_REENTRANT */
-
-#define HEADER_FORMAT_WARNING "[%s][%s] /warning: %s\n"
-#define HEADER_FORMAT_ERROR "[%s][%s] /error: %s\n"
-#define HEADER_FORMAT_NORMAL "[%s][%s]: %s\n"
-#define HEADER_FORMAT_INFO "[%s][%s]: /info: %s\n"
-
-#endif  /* LOGGER_REENTRANT */
 
 #ifndef LOGGER_REENTRANT
 struct timespec logger_event_start_ev;
 #endif 
+
+typedef struct 
+{
+  logger_parameters log_params;
+  logger_backend_init_file log_init_file_fun;
+  logger_backend_write_entry log_write_entry_fun;
+  logger_backend_fini_file log_fini_file_fun;
+} logger_parameters_private;
 
 
 /*
@@ -68,12 +54,11 @@ struct timespec logger_event_start_ev;
  */
 
 /* Configuration values */
-logger_parameters* logger_global_params = 0;
+logger_parameters_private* logger_global_params = 0;
 
 
-/* Log buffers */
-char logger_log_header[LOGGER_MAX_HEADER_SIZE+1];
-char logger_log_entry[LOGGER_MAX_ENTRY_SIZE+1];
+/* output file */
+FILE* logger_file = 0;
 
 /* Lock to prevent simultanious writing */
 #ifdef LOGGER_REENTRANT
@@ -95,128 +80,115 @@ static const char* logger_strdup(const char* str)
 }
 
 
-static void logger_process_log_entry(int size)
+static void logger_process_log_entry(const log_entry* const entry)
 {
-#ifndef LOGGER_OMIT_STDOUT
-  /* portable_gettime(&ts1); */
-  printf("%s",logger_log_entry);
-  fflush(stdout);
-  /* portable_gettime(&ts2); */
-  /* printf("microseconds output: %f\n",(ts2.tv_nsec-ts1.tv_nsec)/1000.); */
-#endif
-  /* TODO: implement output to the file and logging backend */
-}
-
-
-static void logger_write_private(const char* name,
-                                 int entry_type,
-                                 struct timeval* tv,
-                                 const char* format,
-                                 va_list args)
-{
-  int size;
-  const char* header_format;
-  char time_buf[LOGGER_TIME_BUFFER_SIZE+1] = {0};
-  struct tm tm;
-  memmove(&tm, localtime(&tv->tv_sec), sizeof(struct tm));
-
-  snprintf(time_buf, LOGGER_TIME_BUFFER_SIZE,
-           "%04d/%02d/%02d %02d:%02d:%02d.%03d",
-           tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday, tm.tm_hour,
-           tm.tm_min, tm.tm_sec, tv->tv_usec/1000);
-  
-  switch(entry_type)
+  if (logger_file)
   {
-  case LOG_ENTRY_WARNING:
-    switch(logger_global_params->log_format)
-    {
-    case LOG_FORMAT_SIMPLE:
-      header_format = HEADER_FORMAT_SIMPLE_WARNING; break;
-    case LOG_FORMAT_NORMAL:
-    default:
-      header_format = HEADER_FORMAT_WARNING; break;
-    }
-    break;
-  case LOG_ENTRY_ERROR:
-    switch(logger_global_params->log_format)
-    {
-    case LOG_FORMAT_SIMPLE:
-      header_format = HEADER_FORMAT_SIMPLE_ERROR; break;
-    case LOG_FORMAT_NORMAL:
-    default:
-      header_format = HEADER_FORMAT_ERROR; break;
-    }
-    break;
-  case LOG_ENTRY_INFO:
-    switch(logger_global_params->log_format)
-    {
-    case LOG_FORMAT_SIMPLE:
-      header_format = HEADER_FORMAT_SIMPLE_INFO; break;
-    case LOG_FORMAT_NORMAL:
-    default:
-      header_format = HEADER_FORMAT_INFO; break;
-    }
-    break;
-  case LOG_ENTRY_NORMAL:
-  default:
-    switch(logger_global_params->log_format)
-    {
-    case LOG_FORMAT_SIMPLE:
-      header_format = HEADER_FORMAT_SIMPLE_NORMAL; break;
-    case LOG_FORMAT_NORMAL:
-    default:
-      header_format = HEADER_FORMAT_NORMAL; break;
-    }
-    break;
+    logger_global_params->log_write_entry_fun(logger_file, entry);
+    fflush(logger_file);
   }
-  
-
-  if (logger_global_params->log_format != LOG_FORMAT_SIMPLE)
-#ifdef LOGGER_REENTRANT
-  snprintf(logger_log_header,
-           LOGGER_MAX_HEADER_SIZE,
-           header_format,
-           name,
-           time_buf,
-           (void*)pthread_self(),
-           format);
-#else
-  snprintf(logger_log_header,
-           LOGGER_MAX_HEADER_SIZE,
-           header_format,
-           name,
-           time_buf,
-           format);
-#endif
-  else
-    snprintf(logger_log_header,
-      LOGGER_MAX_HEADER_SIZE,
-      header_format,
-      format);
-  
-#ifdef LOGGER_REENTRANT
-  pthread_mutex_lock(&logger_lock);
-#endif
-  size = vsnprintf(logger_log_entry,
-                   LOGGER_MAX_ENTRY_SIZE,
-                   logger_log_header,
-                   args);
-  logger_process_log_entry(size);
-  
-#ifdef LOGGER_REENTRANT
-  pthread_mutex_unlock(&logger_lock);
-#endif
 }
+
+
+
 
 
 static void logger_set_initial_time()
 {
 }
 
+static void logger_rotate_log(const char* filename, int rotate_count)
+{
+  int len = strlen(filename);
+  char* name_from;
+  char* name_to;
+  if (rotate_count <= 0)
+    return;
+  len += 16;
+  name_from = malloc(len);
+  name_to   = malloc(len);
+  len = rotate_count;
+  while(rotate_count--)
+  {
+    if ( rotate_count )
+      sprintf(name_from, "%s.%d",filename,rotate_count);
+    else
+      strcpy(name_from,filename);
+    sprintf(name_to,"%s.%d",filename,rotate_count + 1);
+
+    if (rotate_count+1 == len)
+      remove(name_from);
+    else
+      rename(name_from,name_to);
+  }
+  free(name_from);
+  free(name_to);
+}
+
+static void logger_open_file()
+{
+  if (!logger_global_params)
+    logger_init();
+  if (logger_global_params && logger_global_params->log_params.log_file_path)
+  {
+    if ( logger_global_params->log_params.log_rotate_count )
+      logger_rotate_log(logger_global_params->log_params.log_file_path,
+                        logger_global_params->log_params.log_rotate_count);
+    if (logger_file)
+    {
+      fflush(logger_file);
+      fclose(logger_file);
+    }
+    logger_file = fopen(logger_global_params->log_params.log_file_path,
+                        (logger_global_params->log_params.log_rotate_count < 0 ?
+                         "wt+" : "at"));
+    if (!logger_file)
+      fprintf(stderr,"Could not open %s for writing",
+              logger_global_params->log_params.log_file_path);
+    else
+      logger_global_params->log_init_file_fun(logger_file);
+  }
+}
+
+static void logger_close_file()
+{
+  if (logger_file)
+  {
+    logger_global_params->log_fini_file_fun(logger_file);
+    fflush(logger_file);
+    fclose(logger_file);
+  }
+}
 
 static void logger_init_private()
 {
+  switch(logger_global_params->log_params.log_format)
+  {
+  case LOG_FORMAT_TXT:
+    logger_global_params->log_init_file_fun = logger_txt_backend_init_file;
+    logger_global_params->log_write_entry_fun = logger_txt_backend_write_entry; 
+    logger_global_params->log_fini_file_fun = logger_txt_backend_fini_file;
+    break;
+  case LOG_FORMAT_SIMPLE:
+    logger_global_params->log_init_file_fun = logger_simple_backend_init_file;
+    logger_global_params->log_write_entry_fun = logger_simple_backend_write_entry; 
+    logger_global_params->log_fini_file_fun = logger_simple_backend_fini_file;
+    break;
+  case LOG_FORMAT_XML:
+    logger_global_params->log_init_file_fun = logger_xml_backend_init_file;
+    logger_global_params->log_write_entry_fun = logger_xml_backend_write_entry; 
+    logger_global_params->log_fini_file_fun = logger_xml_backend_fini_file;
+    break;
+  case LOG_FORMAT_SEXP:
+    logger_global_params->log_init_file_fun = logger_sexp_backend_init_file;
+    logger_global_params->log_write_entry_fun = logger_sexp_backend_write_entry; 
+    logger_global_params->log_fini_file_fun = logger_sexp_backend_fini_file;
+    break;  
+  default:
+    break;
+  } 
   logger_set_initial_time();
+  logger_open_file();
 }
 
 
@@ -225,13 +197,13 @@ void logger_set_log_level(log_level_type log_level)
   if (!logger_global_params)
     logger_init_with_loglevel(log_level);
   else
-    logger_global_params->log_level = log_level;
+    logger_global_params->log_params.log_level = log_level;
 }
 
 
 void logger_init()
 {
-  logger_init_with_loglevel(LOG_LEVEL_ALL);
+  logger_init_with_loglevel(LOG_LEVEL_NORMAL);
 }
 
 
@@ -240,6 +212,8 @@ void logger_init_with_loglevel(log_level_type log_level )
   logger_parameters params;
   memset(&params,0,sizeof(params));
   params.log_level = log_level;
+  params.log_format = LOG_FORMAT_SIMPLE;
+  params.log_rotate_count = 0;
   logger_init_with_params(&params);
 }
 
@@ -249,7 +223,9 @@ void logger_init_with_logname(const char* log_name)
   logger_parameters params;
   memset(&params,0,sizeof(params));
   params.log_level = LOG_LEVEL_NORMAL;
+  params.log_format = LOG_FORMAT_SIMPLE;
   params.log_file_path = log_name;
+  params.log_rotate_count = 0;
   logger_init_with_params(&params);
 }
 
@@ -258,11 +234,11 @@ void logger_init_with_params(const logger_parameters* params)
 {
   if ( !logger_global_params )  /* avoid double initialization */
   {
-    logger_global_params = calloc(sizeof(logger_parameters),1);
-    logger_global_params->log_format = params->log_format;
-    logger_global_params->log_level = params->log_level;
-    logger_global_params->log_rotate_count = params->log_rotate_count;
-    logger_global_params->log_file_path = params->log_file_path ?
+    logger_global_params = calloc(sizeof(logger_parameters_private),1);
+    logger_global_params->log_params.log_format = params->log_format;
+    logger_global_params->log_params.log_level = params->log_level;
+    logger_global_params->log_params.log_rotate_count = params->log_rotate_count;
+    logger_global_params->log_params.log_file_path = params->log_file_path ?
       logger_strdup(params->log_file_path) : (const char*)0;
     
     logger_init_private();
@@ -274,29 +250,49 @@ void logger_fini()
 {
   if (logger_global_params)
   {
-    if ( logger_global_params->log_file_path )
-      free((char*)logger_global_params->log_file_path);
+    logger_close_file();
+    if ( logger_global_params->log_params.log_file_path )
+      free((char*)logger_global_params->log_params.log_file_path);
     free(logger_global_params);
   }
+
 }
 
 
 void logger_write(const char* name,int entry_type, const char* format, ...)
 {
   struct timeval tv;
+  log_entry entry;
+  va_list vl;
+  
   if (!logger_global_params)
     logger_init();
 
-  if (logger_global_params->log_format != LOG_FORMAT_SIMPLE)
+  if (logger_global_params->log_params.log_format != LOG_FORMAT_SIMPLE)
     gettimeofday( &tv,0);
-
+ 
   if (entry_type == LOG_ENTRY_NORMAL ||
-      entry_type <= (int)logger_global_params->log_level)
+      entry_type <= (int)logger_global_params->log_params.log_level)
   {
-    va_list vl;
+#ifdef LOGGER_REENTRANT
+    entry.log_thread = (void*)pthread_self();
+#endif
+    entry.log_message = malloc(LOGGER_MAX_ENTRY_SIZE);
+
     va_start(vl, format);
-    logger_write_private(name, entry_type, &tv, format, vl);
+    vsnprintf((char*)entry.log_message,LOGGER_MAX_ENTRY_SIZE-1,format,vl);
     va_end(vl);
+    entry.log_module_name = name;
+    entry.log_entry_type = entry_type;
+    memcpy(&entry.log_tv, &tv, sizeof(tv));
+#ifdef LOGGER_REENTRANT
+    pthread_mutex_lock(&logger_lock);
+#endif
+    logger_process_log_entry(&entry);
+#ifdef LOGGER_REENTRANT
+    pthread_mutex_unlock(&logger_lock);
+#endif
+    free((char*)entry.log_message);
   }
 }
 
@@ -316,13 +312,17 @@ void logger_event_end(const char* name, int entry_type, const char* ev_name)
   portable_gettime(&ts);
   diff_sec = ts.tv_sec - logger_event_start_ev.tv_sec;
   diff_micsec = (ts.tv_nsec - logger_event_start_ev.tv_nsec)/1000;
-    
+  if ( diff_micsec < 0)
+  {
+    diff_sec--;
+    diff_micsec = 1000000+diff_micsec;
+  }
   if ( diff_sec)
-    logger_write(name,entry_type,"Ended: %s, seconds: %ld, microseconds: %dl",
-    ev_name, diff_sec, diff_micsec);
+    logger_write(name,entry_type,"Ended: %s, seconds: %ld, microseconds: %ld",
+                 ev_name, diff_sec, diff_micsec);
   else
     logger_write(name,entry_type,"Ended: %s, microseconds: %ld",
-    ev_name, diff_micsec);
+                 ev_name, diff_micsec);
 }
 #endif
 

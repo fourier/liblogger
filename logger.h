@@ -22,8 +22,16 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
-#define LOGGER_SERVER_PORT 18999
-#define LOGGER_MAX_ENTRY_SIZE (1024*512)
+#include <sys/time.h>           /* for timeval */
+
+/* limit log entry size to 1 Kb */
+#define LOGGER_MAX_ENTRY_SIZE (1024)
+
+#define LOG(...) logger_write(__FILE__,LOG_ENTRY_NORMAL, __VA_ARGS__);
+#define LOGINFO(...) logger_write(__FILE__,LOG_ENTRY_INFO, __VA_ARGS__);
+#define LOGWARN(...) logger_write(__FILE__,LOG_ENTRY_WARNING, __VA_ARGS__);
+#define LOGERROR(...) logger_write(__FILE__,LOG_ENTRY_ERROR, __VA_ARGS__);
+
 
 typedef enum 
 {
@@ -43,17 +51,45 @@ typedef enum
 typedef enum
 {
   LOG_FORMAT_SIMPLE = 0,
-  LOG_FORMAT_NORMAL = 1
+  LOG_FORMAT_TXT,
+  LOG_FORMAT_XML,
+  LOG_FORMAT_SEXP
 } log_format_type;
-  
+
 
 typedef struct
 {
+  /* default: LOG_LEVEL_NORMAL */
   log_level_type log_level;
+  /* default: LOG_FORMAT_SIMPLE */
   log_format_type log_format;
   const char* log_file_path;
-  unsigned int log_rotate_count;
+  /*
+   * rotate count for the log file
+   * 0 - do not rotate(append to the end),
+   * n > 0 - rotate n times
+   * < 0 - always otherwrite
+   * Default: 0
+   */
+  int log_rotate_count;
 } logger_parameters;
+
+typedef struct 
+{
+  const char* log_module_name;
+  int log_entry_type;
+  struct timeval log_tv;
+  const char* log_message;
+  void* log_thread;
+} log_entry;
+
+
+typedef void (*logger_backend_init_file)(FILE* file);
+typedef void (*logger_backend_write_entry)(FILE* file,
+                                           const log_entry* const entry);
+typedef void (*logger_backend_fini_file)(FILE* file);
+
+
 
 
 void logger_init();

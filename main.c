@@ -19,17 +19,29 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "logger.h"
 
-int main(/* int argc, char *argv[] */)
+int main(int argc, char *argv[])
 {
-  /* logger_init(); */
-  logger_init_with_logname("test.log");
+  logger_parameters params;
+  params.log_level = LOG_LEVEL_NORMAL;
+  params.log_format = LOG_FORMAT_SEXP;
+  if ( argc > 1)
+  {
+    params.log_file_path = argv[1];
+    params.log_rotate_count = argc > 2 ? atoi(argv[2]) : 0;
+    logger_init_with_params(&params);
+  }
+  else
+    logger_init();
   printf("Log level ALL\n");
   logger_set_log_level(LOG_LEVEL_ALL);
 
-  logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
+  LOGERROR("some error!");
+  
+  logger_write(__FILE__,LOG_ENTRY_NORMAL,"the message: %s","normal");
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
   logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
@@ -41,7 +53,7 @@ int main(/* int argc, char *argv[] */)
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
   logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
-
+  
   printf("Log level ERRORS\n");
   logger_set_log_level(LOG_LEVEL_ERRORS);
   logger_event_start("main",LOG_ENTRY_NORMAL,"logging");
