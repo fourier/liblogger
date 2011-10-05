@@ -18,8 +18,8 @@
   along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _TXTLOGGER_H_
-#define _TXTLOGGER_H_
+#ifndef _TXTBACKEND_H_
+#define _TXTBACKEND_H_
 
 #include "logger.h"
 
@@ -29,4 +29,4 @@ void logger_txt_backend_write_entry(FILE* file,
 void logger_txt_backend_fini_file(FILE* file);
 
 
-#endif /* _TXTLOGGER_H_ */
+#endif /* _TXTBACKEND_H_ */

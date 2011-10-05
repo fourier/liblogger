@@ -21,13 +21,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MODULE_NAME "main"
+
 #include "logger.h"
 
 int main(int argc, char *argv[])
 {
   logger_parameters params;
   params.log_level = LOG_LEVEL_NORMAL;
-  params.log_format = LOG_FORMAT_XML;
+  params.log_format = LOG_FORMAT_JSON;
   if ( argc > 1)
   {
     params.log_file_path = argv[1];
@@ -40,7 +42,7 @@ int main(int argc, char *argv[])
   logger_set_log_level(LOG_LEVEL_ALL);
 
   LOGERROR("some error!");
-  logger_write(__FILE__,LOG_ENTRY_NORMAL,"the message: %s","normal");
+  logger_write("normal",LOG_ENTRY_NORMAL,"the message: %s","normal");
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
   logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
@@ -55,12 +57,16 @@ int main(int argc, char *argv[])
   
   printf("Log level ERRORS\n");
   logger_set_log_level(LOG_LEVEL_ERRORS);
+#ifndef LOGGER_REENTRANT
   logger_event_start("main",LOG_ENTRY_NORMAL,"logging");
+#endif
   logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");
   logger_write("info",LOG_ENTRY_INFO,"the message: %s","info");
+#ifndef LOGGER_REENTRANT
   logger_event_end("main",LOG_ENTRY_NORMAL,"logging");
+#endif
   logger_fini();
 
   return 0;

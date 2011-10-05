@@ -20,16 +20,16 @@
 
 CC = gcc
 
-CFLAGS = -ggdb -g -std=c99 -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations
+CFLAGS = -ggdb -g -std=c99 -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations -DLOGGER_REENTRANT
 #-fstack-protector-all -fstack-check
-#-DLOGGER_REENTRANT
+
 
 INCLUDES = -I .
 LINKFLAGS = -L.
 #-lrt
 
 SRC_TEST = main.c
-SRC_LIB = logger.c rtclock.c simplebackend.c txtbackend.c xmlbackend.c sexpbackend.c
+SRC_LIB = logger.c rtclock.c simplebackend.c txtbackend.c xmlbackend.c sexpbackend.c jsonbackend.c
 
 HEADERS := $(wildcard *.h)
 OBJECTS_LIB := $(patsubst %.c,%.o,$(SRC_LIB))

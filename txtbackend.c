@@ -61,9 +61,9 @@ void logger_txt_backend_write_entry(FILE* file,
   memmove(&tm, localtime(&entry->log_tv.tv_sec), sizeof(struct tm));
 
   snprintf(time_buf, LOGGER_TIME_BUFFER_SIZE,
-           "%04d/%02d/%02d %02d:%02d:%02d.%03d",
+           "%04d/%02d/%02d %02d:%02d:%02d.%03ld",
            tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday, tm.tm_hour,
-           tm.tm_min, tm.tm_sec, entry->log_tv.tv_usec/1000);
+           tm.tm_min, tm.tm_sec, (long int)entry->log_tv.tv_usec/1000);
   
   switch(entry->log_entry_type)
   {
@@ -84,7 +84,7 @@ void logger_txt_backend_write_entry(FILE* file,
           header_format,
           entry->log_module_name,
           time_buf,
-          entry->log_thread;
+          entry->log_thread,
           entry->log_message);
 #else
   fprintf(file,

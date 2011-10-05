@@ -18,14 +18,14 @@
   along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _XMLBACKEND_H_
-#define _XMLBACKEND_H_
+#ifndef _JSONBACKEND_H_
+#define _JSONBACKEND_H_
 
 #include "logger.h"
 
-void logger_xml_backend_init_file(FILE* file);
-void logger_xml_backend_write_entry(FILE* file,
-                                    const log_entry* const entry);
-void logger_xml_backend_fini_file(FILE* file);
+void logger_json_backend_init_file(FILE* file);
+void logger_json_backend_write_entry(FILE* file,
+                                     const log_entry* const entry);
+void logger_json_backend_fini_file(FILE* file);
 
-#endif /* _XMLBACKEND_H_ */
+#endif /* _JSONBACKEND_H_ */

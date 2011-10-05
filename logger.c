@@ -33,6 +33,8 @@
 #include "txtbackend.h"
 #include "xmlbackend.h"
 #include "sexpbackend.h"
+#include "jsonbackend.h"
+
 
 /* Compile-time configuration options */
 
@@ -62,7 +64,7 @@ FILE* logger_file = 0;
 
 /* Lock to prevent simultanious writing */
 #ifdef LOGGER_REENTRANT
-pthread_mutex_t logger_lock;
+pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static const char* logger_strdup(const char* str)
@@ -175,6 +177,11 @@ static void logger_init_private()
     logger_global_params->log_init_file_fun = logger_xml_backend_init_file;
     logger_global_params->log_write_entry_fun = logger_xml_backend_write_entry; 
     logger_global_params->log_fini_file_fun = logger_xml_backend_fini_file;
+    break;
+  case LOG_FORMAT_JSON:
+    logger_global_params->log_init_file_fun = logger_json_backend_init_file;
+    logger_global_params->log_write_entry_fun = logger_json_backend_write_entry; 
+    logger_global_params->log_fini_file_fun = logger_json_backend_fini_file;
     break;
   case LOG_FORMAT_SEXP:
     logger_global_params->log_init_file_fun = logger_sexp_backend_init_file;

@@ -18,8 +18,8 @@
   along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _SIMPLELOGGER_H_
-#define _SIMPLELOGGER_H_
+#ifndef _SIMPLEBACKEND_H_
+#define _SIMPLEBACKEND_H_
 
 #include "logger.h"
 
@@ -29,4 +29,4 @@ void logger_simple_backend_write_entry(FILE* file,
 void logger_simple_backend_fini_file(FILE* file);
 
 
-#endif /* _SIMPLELOGGER_H_ */
+#endif /* _SIMPLEBACKEND_H_ */
