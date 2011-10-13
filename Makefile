@@ -20,7 +20,7 @@
 
 CC = gcc
 
-CFLAGS = -ggdb -g -std=c99 -pedantic -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations -DLOGGER_REENTRANT
+CFLAGS = -ggdb -g -std=gnu99 --pedantic-errors -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations -DLOGGER_REENTRANT
 #-fstack-protector-all -fstack-check
 
 

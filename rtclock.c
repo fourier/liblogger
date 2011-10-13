@@ -18,15 +18,12 @@
   along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <time.h>
-#include <sys/time.h>
+#include "rtclock.h"
 
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
-
-#include "rtclock.h"
 
 
 void portable_gettime(struct timespec *ts)
