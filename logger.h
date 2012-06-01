@@ -37,6 +37,14 @@
 #define LOGWARN(...) logger_write(MODULE_NAME,LOG_ENTRY_WARNING, __VA_ARGS__);
 #define LOGERROR(...) logger_write(MODULE_NAME,LOG_ENTRY_ERROR, __VA_ARGS__);
 
+#ifndef LOGGER_REENTRANT
+#define LOGTIC(ev) logger_event_start(MODULE_NAME, LOG_ENTRY_NORMAL, ev);
+#define LOGTOC(ev) logger_event_end(MODULE_NAME, LOG_ENTRY_NORMAL, ev);
+#else
+#define LOGTIC(ev);
+#define LOGTOC(ev);
+#endif
+
 
 typedef enum 
 {

@@ -20,13 +20,13 @@
 
 CC = gcc
 
-CFLAGS = -ggdb -g -std=gnu99 --pedantic-errors -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations -DLOGGER_REENTRANT
+CFLAGS = -ggdb -g -std=gnu99 --pedantic-errors -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations
+#-DLOGGER_REENTRANT
 #-fstack-protector-all -fstack-check
 
 
 INCLUDES = -I .
-LINKFLAGS = -L.
-#-lrt
+LINKFLAGS = -L. -lrt
 
 SRC_TEST = main.c
 SRC_LIB = logger.c rtclock.c simplebackend.c txtbackend.c xmlbackend.c sexpbackend.c jsonbackend.c
