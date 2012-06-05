@@ -323,11 +323,17 @@ void logger_event_end(const char* name, int entry_type, const char* ev_name)
     diff_micsec = 1000000+diff_micsec;
   }
   if ( diff_sec)
-    logger_write(name,entry_type,"Ended: %s, seconds: %ld, microseconds: %ld",
+    logger_write(name,entry_type,"Ended: %s, elapsed time: seconds: %ld, microseconds: %ld",
                  ev_name, diff_sec, diff_micsec);
   else
-    logger_write(name,entry_type,"Ended: %s, microseconds: %ld",
+  {
+    if (diff_micsec > 1000)     /* time in milliseconds */
+      logger_write(name,entry_type,"Ended: %s, elapsed time: milliseconds: %.4f",
+                   ev_name, diff_micsec/1000.);
+    else
+      logger_write(name,entry_type,"Ended: %s, elapsed time: microseconds: %ld",
                  ev_name, diff_micsec);
+  }
 }
 #endif
 
