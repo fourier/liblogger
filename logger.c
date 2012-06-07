@@ -297,6 +297,10 @@ void logger_write(const char* name,int entry_type, const char* format, ...)
 #ifdef LOGGER_REENTRANT
     pthread_mutex_unlock(&logger_lock);
 #endif
+    if (entry_type == LOG_ENTRY_ERROR)
+    {
+      fprintf(stderr,"%s\n",(char*)entry.log_message);
+    }
     free((char*)entry.log_message);
   }
 }

@@ -32,14 +32,26 @@
 #define MODULE_NAME __FILE__
 #endif
 
+#ifndef LOG
 #define LOG(...) logger_write(MODULE_NAME,LOG_ENTRY_NORMAL, __VA_ARGS__);
+#endif
+#ifndef LOGINFO
 #define LOGINFO(...) logger_write(MODULE_NAME,LOG_ENTRY_INFO, __VA_ARGS__);
+#endif
+#ifndef LOGWARN
 #define LOGWARN(...) logger_write(MODULE_NAME,LOG_ENTRY_WARNING, __VA_ARGS__);
+#endif
+#ifndef LOGERROR
 #define LOGERROR(...) logger_write(MODULE_NAME,LOG_ENTRY_ERROR, __VA_ARGS__);
+#endif
 
 #ifndef LOGGER_REENTRANT
+#ifndef LOGTIC
 #define LOGTIC(ev) logger_event_start(MODULE_NAME, LOG_ENTRY_NORMAL, ev);
+#endif
+#ifndef LOGTOC
 #define LOGTOC(ev) logger_event_end(MODULE_NAME, LOG_ENTRY_NORMAL, ev);
+#endif
 #else
 #define LOGTIC(ev);
 #define LOGTOC(ev);
