@@ -39,9 +39,19 @@ OBJECTS := $(patsubst %.c,%.o,$(SRC_TEST) $(SRC_LIB))
 OUTPUT_TEST = loggertest
 OUTPUT_LIB = liblogger.a
 
+MAKEDEPEND = $(CPP) -MM $(CPPFLAGS) $< > $*.d
+
 all: $(OBJECTS) $(OUTPUT_LIB) $(OUTPUT_TEST)
 
-%.o : %.c %.h
+%.P : %.c
+	$(MAKEDEPEND)
+	@sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' < $*.d > $@; \
+	rm -f $*.d; [ -s $@ ] || rm -f $@
+
+include $(SRC_LIB:.c=.P)
+
+
+%.o : %.c
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) $< -o $@
 
 $(OUTPUT_TEST): $(HEADERS) $(OBJECTS) $(OUTPUT_LIB) 
@@ -59,6 +69,7 @@ lint:
 clean :
 	$(RM) $(OBJECTS_LIB)  $(OBJECTS_TEST)
 	$(RM)	$(OUTPUT_LIB) $(OUTPUT_TEST) $(OUTPUT_DAEMON)
+	$(RM) *.P
 
 check-syntax: 
 	gcc -o nul -S ${CHK_SOURCES} 
