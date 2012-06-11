@@ -44,7 +44,7 @@ MAKEDEPEND = $(CPP) -MM $(CPPFLAGS) $< > $*.d
 all: $(OBJECTS) $(OUTPUT_LIB) $(OUTPUT_TEST)
 
 %.P : %.c
-	$(MAKEDEPEND)
+	@$(MAKEDEPEND)
 	@sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' < $*.d > $@; \
 	rm -f $*.d; [ -s $@ ] || rm -f $@
 
@@ -52,6 +52,7 @@ include $(SRC_LIB:.c=.P)
 
 
 %.o : %.c
+	@$(MAKEDEPEND)
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) $< -o $@
 
 $(OUTPUT_TEST): $(HEADERS) $(OBJECTS) $(OUTPUT_LIB) 
