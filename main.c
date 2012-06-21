@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
   printf("Log level NORMAL\n");
   logger_set_log_level(LOG_LEVEL_NORMAL);
-
+  logger_set_use_stdout(1);
   logger_write("norm",LOG_ENTRY_NORMAL,"the message: %s","normal");
   logger_write("err",LOG_ENTRY_ERROR,"the message: %s","error");
   logger_write("warn",LOG_ENTRY_WARNING,"the message: %s","warning");

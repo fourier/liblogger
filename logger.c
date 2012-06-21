@@ -204,6 +204,13 @@ void logger_set_log_level(log_level_type log_level)
     logger_global_params->log_params.log_level = log_level;
 }
 
+void logger_set_use_stdout(int use_stdout)
+{
+  if (!logger_global_params)
+    logger_init();
+  logger_global_params->log_params.use_stdout = use_stdout;
+}
+
 
 void logger_init()
 {
@@ -219,6 +226,7 @@ void logger_init_with_loglevel(log_level_type log_level )
   params.log_format = LOG_FORMAT_SIMPLE;
   params.log_rotate_count = 0;
   params.log_file_path = 0;
+  params.use_stdout = 0;
   logger_init_with_params(&params);
 }
 
@@ -231,6 +239,7 @@ void logger_init_with_logname(const char* log_name)
   params.log_format = LOG_FORMAT_SIMPLE;
   params.log_file_path = log_name;
   params.log_rotate_count = 0;
+  params.use_stdout = 0;
   logger_init_with_params(&params);
 }
 
@@ -245,7 +254,7 @@ void logger_init_with_params(const logger_parameters* params)
     logger_global_params->log_params.log_rotate_count = params->log_rotate_count;
     logger_global_params->log_params.log_file_path = params->log_file_path ?
       logger_strdup(params->log_file_path) : (const char*)0;
-    
+    logger_global_params->log_params.use_stdout= params->use_stdout;
     logger_init_private();
   }
 }
@@ -301,6 +310,11 @@ void logger_write(const char* name,int entry_type, const char* format, ...)
     {
       fprintf(stderr,"%s\n",(char*)entry.log_message);
     }
+    else
+      if (logger_global_params->log_params.use_stdout &&
+          entry_type != LOG_ENTRY_INFO)
+        fprintf(stdout,"%s\n",(char*)entry.log_message);
+    
     free((char*)entry.log_message);
   }
 }

@@ -98,6 +98,10 @@ typedef struct
    * Default: 0
    */
   int log_rotate_count;
+  /* Determines if we shall use stdout as well as log
+   * for output (except for info messages)
+   * default: 0. */
+  int use_stdout;
 } logger_parameters;
 
 typedef struct 
@@ -125,6 +129,7 @@ void logger_init_with_params(const logger_parameters* params);
 void logger_fini();
 
 void logger_set_log_level(log_level_type log_level);
+void logger_set_use_stdout(int use_stdout);
 
 void logger_write(const char* name,int entry_type, const char* format, ...);
 
