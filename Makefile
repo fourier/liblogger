@@ -56,7 +56,7 @@ include $(SRC_LIB:.c=.P)
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) $< -o $@
 
 $(OUTPUT_TEST): $(HEADERS) $(OBJECTS) $(OUTPUT_LIB) 
-	$(CC) $(OBJECTS_TEST) -o $(OUTPUT_TEST) $(LINKFLAGS) -llogger
+	$(CC) $(OBJECTS_TEST) -o $(OUTPUT_TEST) -llogger $(LINKFLAGS)
 
 $(OUTPUT_LIB): $(HEADERS) $(OBJECTS) $ $(OBJECTS_LIB)
 	$(RM) -f $(OUTPUT_LIB)
