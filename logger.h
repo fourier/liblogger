@@ -45,7 +45,7 @@
 #define LOGERROR(...) logger_write(MODULE_NAME,LOG_ENTRY_ERROR, __VA_ARGS__);
 #endif
 
-#ifndef LOGGER_REENTRANT
+#ifndef LOGGER_MT
 #ifndef LOGTIC
 #define LOGTIC(ev) logger_event_start(MODULE_NAME, LOG_ENTRY_NORMAL, ev);
 #endif
@@ -133,7 +133,7 @@ void logger_set_use_stdout(int use_stdout);
 
 void logger_write(const char* name,int entry_type, const char* format, ...);
 
-#ifndef LOGGER_REENTRANT
+#ifndef LOGGER_MT
 void logger_event_start(const char* name, int entry_type, const char* ev_name);
 void logger_event_end(const char* name, int entry_type, const char* ev_name);
 #endif

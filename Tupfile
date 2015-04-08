@@ -1,0 +1,62 @@
+# -*- Mode: tup; -*-
+
+# Copyright (C) 2015 Alexey Veretennikov (alexey dot veretennikov at gmail.com)
+# 
+#	This file is part of liblogger.
+#
+# liblogger is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# liblogger is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
+
+CC = gcc 
+AR = ar
+CFLAGS = -std=gnu99 --pedantic-errors -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations
+# handle release/debug configurations
+ifeq (@(RELEASE),0)
+  CFLAGS += -ggdb -g 
+else
+  CFLAGS += -O3 
+endif
+
+# handle multithreaded/simple configurations
+ifneq (@(MT),0)
+  CFLAGS += -DLOGGER_MT
+endif
+
+
+INCLUDES = -I .
+LINKFLAGS = -L. -llogger
+ifeq (@(TUP_PLATFORM), linux)
+  LINKFLAGS += -lrt 
+endif
+
+OUTPUT = loggertest
+OUTPUT_LIB = liblogger.a
+
+LIBRARY_SRCS = logger.c rtclock.c simplebackend.c txtbackend.c xmlbackend.c sexpbackend.c jsonbackend.c
+TEST_SRCS = main.c
+
+!cc = |> $(CC) $(CFLAGS) $(INCLUDES) -c %f -o %o |> %B.o
+
+# library objects
+: foreach $(LIBRARY_SRCS) |> !cc |> {LIB_OBJS}
+
+# library binary
+: {LIB_OBJS} |> $(AR) cr %o %f ; ranlib %o |> $(OUTPUT_LIB)
+
+# test object
+: main.c |> !cc |> {TEST_OBJ}
+
+# test binary
+: {TEST_OBJ} | $(OUTPUT_LIB) |> $(CC) %f -o %o $(LINKFLAGS) |> $(OUTPUT)
+
+

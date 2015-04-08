@@ -17,16 +17,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with liblogger.  If not, see <http://www.gnu.org/licenses/>.
 
+PLATFORM = $(shell uname)
 
-CC = gcc
+ifeq ($(CC),cc)
+	override CC = gcc
+endif
 
 CFLAGS = -ggdb -g -std=gnu99 --pedantic-errors -Wall -Wextra -Wswitch-default -Wswitch-enum -Wdeclaration-after-statement -Wmissing-declarations
-#-DLOGGER_REENTRANT
+#-DLOGGER_MT
 #-fstack-protector-all -fstack-check
 
-
 INCLUDES = -I .
-LINKFLAGS = -L. -lrt
+LINKFLAGS = -L.
+ifeq ($(PLATFORM),Linux)
+  LINKFLAGS += -lrt
+endif
 
 SRC_TEST = main.c
 SRC_LIB = logger.c rtclock.c simplebackend.c txtbackend.c xmlbackend.c sexpbackend.c jsonbackend.c

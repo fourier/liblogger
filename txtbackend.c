@@ -30,21 +30,21 @@
 #define LOGGER_TIME_BUFFER_SIZE 64
 #define LOGGER_MAX_HEADER_SIZE 512
 
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
 
 #define HEADER_FORMAT_WARNING "[%s][%s][%p] /warning: %s\n"
 #define HEADER_FORMAT_ERROR "[%s][%s][%p] /error: %s\n"
 #define HEADER_FORMAT_NORMAL "[%s][%s][%p]: %s\n"
 #define HEADER_FORMAT_INFO "[%s][%s][%p]: /info: %s\n"
 
-#else  /* !LOGGER_REENTRANT */
+#else  /* !LOGGER_MT */
 
 #define HEADER_FORMAT_WARNING "[%s][%s] /warning: %s\n"
 #define HEADER_FORMAT_ERROR "[%s][%s] /error: %s\n"
 #define HEADER_FORMAT_NORMAL "[%s][%s]: %s\n"
 #define HEADER_FORMAT_INFO "[%s][%s]: /info: %s\n"
 
-#endif  /* LOGGER_REENTRANT */
+#endif  /* LOGGER_MT */
 
 
 
@@ -80,7 +80,7 @@ void logger_txt_backend_write_entry(FILE* file,
   }
   
 
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
   fprintf(file,
           header_format,
           entry->log_module_name,

@@ -23,7 +23,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
 #include <pthread.h>
 #endif
 
@@ -38,7 +38,7 @@
 
 /* Compile-time configuration options */
 
-#ifndef LOGGER_REENTRANT
+#ifndef LOGGER_MT
 struct timespec logger_event_start_ev;
 #endif 
 
@@ -63,7 +63,7 @@ logger_parameters_private* logger_global_params = 0;
 FILE* logger_file = 0;
 
 /* Lock to prevent simultanious writing */
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -288,7 +288,7 @@ void logger_write(const char* name,int entry_type, const char* format, ...)
   if (entry_type == LOG_ENTRY_NORMAL ||
       entry_type <= (int)logger_global_params->log_params.log_level)
   {
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
     entry.log_thread = (void*)pthread_self();
 #endif
     entry.log_message = malloc(LOGGER_MAX_ENTRY_SIZE);
@@ -299,11 +299,11 @@ void logger_write(const char* name,int entry_type, const char* format, ...)
     entry.log_module_name = name;
     entry.log_entry_type = entry_type;
     memcpy(&entry.log_tv, &tv, sizeof(tv));
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
     pthread_mutex_lock(&logger_lock);
 #endif
     logger_process_log_entry(&entry);
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
     pthread_mutex_unlock(&logger_lock);
 #endif
     if (entry_type == LOG_ENTRY_ERROR)
@@ -319,7 +319,7 @@ void logger_write(const char* name,int entry_type, const char* format, ...)
   }
 }
 
-#ifndef LOGGER_REENTRANT
+#ifndef LOGGER_MT
 
 void logger_event_start(const char* name, int entry_type, const char* ev_name)
 {

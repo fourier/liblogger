@@ -96,7 +96,7 @@ static void logger_xml_write_level(FILE* file,
   fwrite(XML_LEVEL_END, sizeof(XML_LEVEL_END)-1, 1, file);
 }
 
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
 static void logger_xml_write_thread(FILE* file,
                                const log_entry* const entry)
 {
@@ -130,7 +130,7 @@ void logger_xml_backend_write_entry(FILE* file,
   logger_xml_write_millis(file,entry);
   logger_xml_write_logger(file,entry);
   logger_xml_write_level(file,entry);
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
   logger_xml_write_thread(file,entry);
 #endif
   logger_xml_write_message(file,entry);

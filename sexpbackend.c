@@ -94,7 +94,7 @@ static void logger_sexp_write_level(FILE* file,
   fwrite(SEXP_LEVEL_END, sizeof(SEXP_LEVEL_END)-1, 1, file);
 }
 
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
 static void logger_sexp_write_thread(FILE* file,
                                const log_entry* const entry)
 {
@@ -127,7 +127,7 @@ void logger_sexp_backend_write_entry(FILE* file,
   logger_sexp_write_millis(file,entry);
   logger_sexp_write_logger(file,entry);
   logger_sexp_write_level(file,entry);
-#ifdef LOGGER_REENTRANT
+#ifdef LOGGER_MT
   logger_sexp_write_thread(file,entry);
 #endif
   logger_sexp_write_message(file,entry);
