@@ -35,7 +35,7 @@ endif
 
 INCLUDES = -I .
 LINKFLAGS = -L. -llogger
-ifeq (@(TUP_PLATFORM), linux)
+ifeq (@(TUP_PLATFORM),linux)
   LINKFLAGS += -lrt 
 endif
 
