@@ -23,7 +23,7 @@
 #define _LOGGER_H_
 
 #include <sys/time.h>           /* for timeval */
-
+#include <stdio.h>              /* for FILE */
 /* limit log entry size to 1 Kb */
 #define LOGGER_MAX_ENTRY_SIZE (1024)
 
